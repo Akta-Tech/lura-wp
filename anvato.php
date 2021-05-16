@@ -124,3 +124,116 @@ if ( is_admin() ) {
 		1
 	);
 } // is_admin - instant_articles_before_transform_post
+
+add_action(
+	'rss2_ns', function () {
+	echo 'xmlns:media="http://search.yahoo.com/mrss/" ';
+}
+);
+
+add_action( 'rss2_item', 'add_feed_item_media' );
+
+function xml_encode($s) {
+	return str_replace(array('&','>','<','"'), array('&amp;','&gt;','&lt;','&quot;'), $s);
+}
+
+function get_mime_type($media_type) {
+	switch($media_type) {
+		case 'mp4':
+			return 'video/mp4';
+		case 'm3u8-variant':
+			return 'application/x-mpegurl';
+		case 'dash':
+			return 'application/dash+xml';
+		case 'jpg':
+			return 'image/jpeg';
+		default:
+			return 'text/plain';
+	}
+}
+
+function create_tkx_url($video_id, $station, $user_pars) {
+	$feed_settings = anvato_settings()->feed_settings;
+	$token = JWT::create_tkx_token($video_id, $station['access_key'], $station['secret_key'], $user_pars);
+	$tkx_url = 'https://tkx.apis.anvato.net';
+	if (isset($feed_settings['tkx_base_url']) && !empty($feed_settings['tkx_base_url'])) {
+		$tkx_url = $feed_settings['tkx_base_url'];
+	}
+	$tkx_url = trim($tkx_url, '/');
+	return $tkx_url . '/rest/v2/mcp/video/' . $video_id . '?anvack=' . $station['access_key'] . '&token=' . $token;
+}
+
+function add_feed_item_media() {
+	global $post;
+
+	$feed_settings = anvato_settings()->feed_settings;
+	if (!$feed_settings) {
+		return;
+	}
+	$media_types = [];
+	foreach (['include_hls', 'include_dash', 'include_mp4'] as $media_type) {
+		if (isset($feed_settings[$media_type])) {
+			$media_types[] = $media_type;
+		}
+	}
+	if (!count($media_types) === 0) {
+		return;
+	}
+
+	if (!has_shortcode($post->post_content, 'anvplayer')) {
+		return;
+	}
+	require_once ANVATO_PATH . '/lib/JWT.php';
+
+	preg_match_all('/\[anvplayer video="(\d+)" station="(\d+)"\]/', $post->post_content, $matches);
+	if (!$matches || count($matches) !== 3) {
+		return;
+	}
+
+	$video_id = $matches[1][0];
+	$station_id = $matches[2][0];
+	$station = null;
+
+	$mcp = anvato_settings()->get_mcp_options();
+	if (!isset($mcp['owners'])) {
+		return;
+	}
+	foreach ($mcp['owners'] as $owner) {
+		if (!isset($owner['id']) || !isset($owner['access_key']) || !isset($owner['secret_key'])) {
+			continue;
+		}
+		if ($owner['id'] === $station_id) {
+			$station = $owner;
+			break;
+		}
+	}
+	if (!$station) {
+		return;
+	}
+
+	// Add poster
+	$poster_format = 'jpg';
+	$user_pars = [
+		'return_format' => 'redirect',
+		'stream_format' => $poster_format
+	];
+	$poster_url = create_tkx_url($video_id, $station, $user_pars);
+	echo '<media:thumbnail url="' . xml_encode($poster_url) . '"/>';
+
+	$is_group = count($media_types) > 1;
+	if ($is_group) {
+		echo '<media:group>';
+	}
+	foreach ($media_types as $media_type) {
+		$user_pars = [
+			'return_format' => 'redirect',
+			'stream_format' => $feed_settings[$media_type]
+		];
+		$video_url = create_tkx_url($video_id, $station, $user_pars);
+		$mime_type = get_mime_type($feed_settings[$media_type]);
+		echo '<media:content url="' . xml_encode($video_url) . '" type="' . $mime_type . '" />';
+	}
+	if ($is_group) {
+		echo '</media:group>';
+	}
+}
