@@ -12,6 +12,7 @@ if ( ! class_exists( 'Anvato_Settings' ) ) :
 		const ANALYTICS_SETTINGS_KEY    = 'anvato_analytics';
 		const AUTOMATIC_SETUP_KEY       = 'anvato_plugin_setup';
 		const GENERAL_SETTINGS_KEY      = 'anvato_mcp';
+		const FEED_SETTINGS_KEY         = 'anvato_feed';
 		const MONETIZATION_SETTINGS_KEY = 'anvato_monetization';
 		const PLAYER_SETTINGS_KEY       = 'anvato_player';
 
@@ -28,6 +29,7 @@ if ( ! class_exists( 'Anvato_Settings' ) ) :
 				'section_anvato_analytics'       => __( 'Anvato Analytics Settings', 'wp_anvato' ),
 				'section_monetization'           => __( 'Monetization Settings', 'wp_anvato' ),
 				'section_mcp'                    => __( 'MCP Settings', 'wp_anvato' ),
+				'section_feed'                   => __( 'Feed Settings', 'wp_anvato' ),
 				'section_adobe_analytics'        => __( 'Adobe Analytics Settings', 'wp_anvato' ),
 				'section_heartbeat_analytics'    => __( 'Heartbeat Analytics Setting', 'wp_anvato' ),
 				'section_comscore_analytics'     => __( 'Comscore Analytics Settings', 'wp_anvato' ),
@@ -57,6 +59,10 @@ if ( ! class_exists( 'Anvato_Settings' ) ) :
 				'advanced_targeting'             => __( 'Advanced Targeting', 'wp_anvato' ),
 				'mcp_config'                     => __( 'API Configuration', 'wp_anvato' ),
 				'reset_settings'                 => __( 'Reset settings', 'wp_anvato' ),
+                'tkx_base_url'                   => __( 'TKX Url [OPTIONAL]', 'wp_anvato' ),
+                'include_hls'                    => __( 'HLS', 'wp_anvato' ),
+				'include_dash'                   => __( 'MPEG-DASH', 'wp_anvato' ),
+				'include_mp4'                    => __( 'MP4', 'wp_anvato' ),
 			);
 		}
 
@@ -256,6 +262,46 @@ if ( ! class_exists( 'Anvato_Settings' ) ) :
 					),
 				),
 			),
+			self::FEED_SETTINGS_KEY => array(
+				array(
+					'id'       => 'section_feed',
+					'title'    => 'Feed Settings',
+					'callback' => array( 'Anvato_Callbacks', 'anvato_html_line' ),
+					'fields'   => array(
+						array(
+							'id'       => 'tkx_base_url',
+							'title'    => 'Tkx URL (Leave empty to use the default)'
+						),
+						array(
+							'id'       => 'include_hls',
+							'title'    => 'HLS',
+							'callback' => array( 'Anvato_Form_Fields', 'check' ),
+							'args' => [
+								'check_val' => 'm3u8-variant',
+								'class_name' => 'feed-media-type'
+							]
+						),
+						array(
+							'id'       => 'include_dash',
+							'title'    => 'MPEG-DASH',
+							'callback' => array( 'Anvato_Form_Fields', 'check' ),
+							'args' => [
+								'check_val' => 'dash',
+								'class_name' => 'feed-media-type'
+							]
+						),
+						array(
+							'id'       => 'include_mp4',
+							'title'    => 'MP4',
+							'callback' => array( 'Anvato_Form_Fields', 'check' ),
+							'args' => [
+								'check_val' => 'mp4',
+								'class_name' => 'feed-media-type'
+							]
+						),
+					),
+				),
+			),
 			self::GENERAL_SETTINGS_KEY      => array(
 				array(
 					'id'       => 'section_mcp',
@@ -360,6 +406,10 @@ if ( ! class_exists( 'Anvato_Settings' ) ) :
 				// Monetization Tab
 				$this->plugin_settings_tabs[ self::MONETIZATION_SETTINGS_KEY ] = __( 'Monetization', 'wp_anvato' );
 				$this->create_settings_section( self::MONETIZATION_SETTINGS_KEY );
+
+				// Feed Tab
+				$this->plugin_settings_tabs[ self::FEED_SETTINGS_KEY ] = __( 'Feed', 'wp_anvato' );
+				$this->create_settings_section( self::FEED_SETTINGS_KEY );
 
 				// Access Tab
 				$this->plugin_settings_tabs[ self::GENERAL_SETTINGS_KEY ] = __( 'Access', 'wp_anvato' );
@@ -516,6 +566,8 @@ if ( ! class_exists( 'Anvato_Settings' ) ) :
 					$attr = array();
 					if ( 'anvato_player' === $active_tab ) {
 						$attr = array( 'onClick' => 'return validate_hw_fields()' );
+					} else if ($active_tab === self::FEED_SETTINGS_KEY) {
+						$attr = array( 'onClick' => 'return validate_feed_options()' );
 					}
 					submit_button( 'Save Changes', 'primary', 'submit', false, $attr );
 				}
@@ -581,6 +633,7 @@ if ( ! class_exists( 'Anvato_Settings' ) ) :
 				delete_option( self::MONETIZATION_SETTINGS_KEY );
 				delete_option( self::ANALYTICS_SETTINGS_KEY );
 				delete_option( self::AUTOMATIC_SETUP_KEY );
+				delete_option( self::FEED_SETTINGS_KEY );
 
 				wp_redirect(
 					esc_url_raw(
@@ -640,12 +693,14 @@ if ( ! class_exists( 'Anvato_Settings' ) ) :
 			$this->player_settings       = (array) get_option( self::PLAYER_SETTINGS_KEY );
 			$this->analytics_settings    = (array) get_option( self::ANALYTICS_SETTINGS_KEY );
 			$this->monetization_settings = (array) get_option( self::MONETIZATION_SETTINGS_KEY );
+			$this->feed_settings         = (array) get_option( self::FEED_SETTINGS_KEY );
 
 			// Merge with defaults
 			$this->options[ self::PLAYER_SETTINGS_KEY ]       = array_merge( array( 'section_player' => __( 'Player', 'wp_anvato' ) ), $this->player_settings );
 			$this->options[ self::ANALYTICS_SETTINGS_KEY ]    = array_merge( array( 'section_analytics' => __( 'Analytics', 'wp_anvato' ) ), $this->analytics_settings );
 			$this->options[ self::MONETIZATION_SETTINGS_KEY ] = array_merge( array( 'section_analytics' => __( 'Monetization', 'wp_anvato' ) ), $this->monetization_settings );
 			$this->options[ self::GENERAL_SETTINGS_KEY ]      = array_merge( array( 'section_mcp' => __( 'Access', 'wp_anvato' ) ), $this->general_settings );
+			$this->options[ self::FEED_SETTINGS_KEY ]         = array_merge( array( 'section_mcp' => __( 'Access', 'wp_anvato' ) ), $this->feed_settings );
 			$this->options[ self::AUTOMATIC_SETUP_KEY ]       = (array) get_option( self::AUTOMATIC_SETUP_KEY );
 
 			return ! isset( $key ) ? $this->options : $this->options[ $key ];
@@ -808,6 +863,16 @@ if ( ! class_exists( 'Anvato_Settings' ) ) :
 			printf(
 				'<input type="checkbox" name="%s" value="1" onclick="if(this.checked) return confirm(\'This will erase all plugin settings. Are you sure?\');" />',
 				esc_attr( $args['name'] )
+			);
+		}
+
+		static function check( $args ) {
+			printf(
+				'<input type="checkbox" name="%s" value="%s" class="%s" %s/>',
+				esc_attr( $args['name'] ),
+				esc_attr( $args['check_val'] ),
+				isset($args['class_name']) ? esc_attr($args['class_name']) : '',
+				(isset($args['value']) && $args['value'] === $args['check_val']) ? 'checked' : ''
 			);
 		}
 
