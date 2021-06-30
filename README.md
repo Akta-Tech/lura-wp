@@ -107,26 +107,55 @@ Heartbeat Analytics
 
 `Account Info` field can be JSON object that includes all attributes for Heartbeat Analytics. It is also can be used an `account Id` as a single field along with other attributes in the settings.
 
-Google Analytics
+### Google Analytics
 
 `Account Info` field can be JSON object that includes all attributes for Google Analytics. We also support shortcode attribute level Google Analytics tracking ID.
 
 Example: [anvplayer video="9876543" plugin_google_trackerid="UA-12345"]
 
-### Monetization
-
+### GAM/DFP Monetization
 `One` of the following fields is enough to set `Anvato Player's Google Ad Manager Plugin (formerly DFP)` in `Monetization Tab`. Don't set both fields.
 
-- Google Ad Manager(GAM) Premium Ad Tag
+#### Option 1: Specify Ad Tag URL
+You can set the GAM/DFP plugin ad tag URL directly from the shortcode as attribute:
 
-	It is used to set GAM Plugin Adtag URL. It can be also set in shortcode as attribute.
+```
+[anvplayer video="9876543" plugin_dfp_adtagurl="[URL]"]
+```
 
-	Example: [anvplayer video="9876543" plugin_dfp_adtagurl="[URL]"]
+#### Option 2: Specify key value fields
 
-- Advanced Targeting
+You can use the `dfpkeyvalues` attribute to pass key-value fields to DFP plugin.
 
-	`JSON` object that are passed to `Anvato Player` as `GAM Plugin` object without modification.
+The attribute must be a valid JSON object and is embedded according to 
+the documentation explained here:
+https://dev.anvato.net/api/playerv3#dfp-parameters-(client-side)
 
-	To override GAM client side key values, you can use attribute level setup.
+##### Example
+To generate the the following player embed code:
 
-	Example: [anvplayer video="9876543" dfpkeyvalues="[keyValues]"]
+```
+"plugins": {
+  "dfp": {
+    "clientSide": {
+      "keyValues": {
+        "mykey1" : 'myvalue1',
+        "mykey2" : 'myvalue2'
+      }
+    }
+  }
+}
+```
+
+The following tag must be used
+```
+[anvplayer video="9876543" dfpkeyvalues='{"mykey1": "myvalue1", "mykey2": "myvalue2"}']
+```
+
+##### Common Pitfalls
+* Remember that the attributes from shortcodes are parsed by WordPress 
+core first before being passed on to the Anvato plugin. Therefore it
+is important to not use single quotes in the key-value pairs you are
+embedding. 
+
+
