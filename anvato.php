@@ -155,7 +155,7 @@ function get_mime_type($media_type) {
 function create_tkx_url($video_id, $station, $user_pars) {
 	$feed_settings = anvato_settings()->feed_settings;
 	$token = JWT::create_tkx_token($video_id, $station['access_key'], $station['secret_key'], $user_pars);
-	$tkx_url = 'https://tkx.apis.anvato.net';
+	$tkx_url = 'https://tkx.mp.lura.live';
 	if (isset($feed_settings['tkx_base_url']) && !empty($feed_settings['tkx_base_url'])) {
 		$tkx_url = $feed_settings['tkx_base_url'];
 	}
