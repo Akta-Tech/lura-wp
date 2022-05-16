@@ -83,8 +83,13 @@ function anvato_shortcode_get_parameters( $attr ) {
 	}
 
 	if ( ! empty( $mcp['mcp']['tkx_key'] ) ) {
-		$json['accessKey']                = $mcp['mcp']['tkx_key'];
 		$json['accessControl']['preview'] = false;
+
+		if (!empty($attr['feed'])) {
+			$json['anvack'] = $mcp['mcp']['tkx_key'];
+		} else {
+			$json['accessKey'] = $mcp['mcp']['tkx_key'];
+		}
 	}
 
 	$json['autoplay']  = ( 'true' === $json['autoplay'] );
@@ -136,8 +141,12 @@ function anvato_shortcode_get_parameters( $attr ) {
 
 	foreach ( $mcp['owners'] as $owner ) {
 		if ( $owner['id'] === $json['station'] && ! empty( $owner['access_key'] ) ) {
-			$json['accessKey'] = $owner['access_key'];
-			$json['token']     = 'default';
+			if (!empty($attr['feed'])) {
+				$json['anvack'] = $owner['access_key'];
+			} else {
+				$json['token'] = 'default';
+				$json['accessKey'] = $owner['access_key'];
+			}
 		}
 	}
 
