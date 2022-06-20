@@ -17,6 +17,9 @@ function anvato_shortcode_get_parameters( $attr ) {
 	$analytics    = anvato_settings()->get_options( Anvato_Settings::ANALYTICS_SETTINGS_KEY );
 	$monetization = anvato_settings()->get_options( Anvato_Settings::MONETIZATION_SETTINGS_KEY );
 
+	$is_feed = !empty($attr['feed']);
+	$is_playlist = !empty($attr['playlist']);
+
 	// Set the attributes which the shortcode can override
 	$json = shortcode_atts(
 		array(
@@ -63,10 +66,12 @@ function anvato_shortcode_get_parameters( $attr ) {
 
 	unset( $json['ext_id'] );
 
-	if ( ! empty( $json['sharelink'] ) ) {
-		$json['shareLink'] = $json['sharelink'];
-	} elseif ( ! empty( $player['default_share_link'] ) ) {
-		$json['shareLink'] = $player['default_share_link'];
+	if ( ! $is_feed && ! $is_playlist ) {
+		if ( ! empty( $json['sharelink'] ) ) {
+			$json['shareLink'] = $json['sharelink'];
+		} elseif ( ! empty( $player['default_share_link'] ) ) {
+			$json['shareLink'] = $player['default_share_link'];
+		}
 	}
 
 	unset( $json['sharelink'] );
