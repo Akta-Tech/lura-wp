@@ -158,4 +158,22 @@ core first before being passed on to the Anvato plugin. Therefore it
 is important to not use single quotes in the key-value pairs you are
 embedding. 
 
+### Access
 
+Minimal example:
+
+```json
+{
+  "mcp": {
+    "url": "<mcp-url>",
+    "id": "<mcp-id>"
+  },
+  "owners": [{
+    "label": "<owner-name>",
+    "id": "<owner-id>",
+    "public_key": "<api-public-key>",
+    "private_key": "<api-private-key>",
+    "access_key": "<anvack-key>"
+  }]
+}
+```
