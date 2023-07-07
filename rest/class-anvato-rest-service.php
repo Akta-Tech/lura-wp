@@ -148,7 +148,7 @@ class Anvato_Rest_Service {
 	 *
 	 * @return object.
 	 */
-	private function get_content_data( $content, $type, $station ) {
+	private static function get_content_data( $content, $type, $station ) {
 		$response = array(
 			'id'          => null,
 			'title'       => null,
@@ -212,7 +212,7 @@ class Anvato_Rest_Service {
 	 * @param int Station Id
 	 * @return string The shortcode
 	 */
-	private function get_channels_stitched_streams( $channel, $station ) {
+	private static function get_channels_stitched_streams( $channel, $station ) {
 		$streams = array();
 
 		foreach ( $channel->stitched_streams->stitched_stream as $stream ) {
