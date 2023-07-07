@@ -256,7 +256,7 @@ function anvato_shortcode( $attr ) {
 	$player_url = ! empty( $attr['player_url'] ) ? $attr['player_url'] : $parameters['player']['player_url'];
 	$script_id  = 'wp-anvato-player-' . $parameters['json']['pInstance'];
 
-	wp_enqueue_script( $script_id, esc_url( $player_url ) );
+	wp_enqueue_script( $script_id, esc_url( $player_url ), array(), false, true );
 	wp_script_add_data( $script_id, 'wp-anvato-player-parameters', wp_json_encode( $parameters['json'] ) );
 
 	// Player container
